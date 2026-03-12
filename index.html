@@ -11,6 +11,8 @@
     <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&display=swap" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
     <style>
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth;background:#1e293b}
@@ -22,16 +24,22 @@ button,input,select,textarea{font-family:inherit}
 .header-left h1 svg{color:#6366f1;margin-right:10px;flex-shrink:0}
 .header-left .subtitle{color:#94a3b8;font-size:14px;display:flex;align-items:center;gap:8px}
 .header-left .subtitle.loaded{color:#10b981}
+.header-left .subtitle.error{color:#f87171}
 .info-btn{width:18px;height:18px;border-radius:50%;border:1px solid #64748b;background:transparent;color:#64748b;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;transition:all .2s;position:relative}
 .info-btn:hover,.info-btn.active{border-color:#6366f1;color:#6366f1;background:rgba(99,102,241,.1)}
 .info-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #475569;border-radius:8px;padding:8px 12px;font-size:12px;color:#e2e8f0;white-space:nowrap;opacity:0;visibility:hidden;transition:all .2s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none}
 .info-tooltip::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);border:6px solid transparent;border-top-color:#475569}
 .info-btn.active .info-tooltip{opacity:1;visibility:visible}
 .info-tooltip.wide{white-space:normal;max-width:370px;min-width: 240px;text-align:center}
-.upload-btn{width:38px;height:38px;border-radius:10px;border:1px solid #475569;background:rgba(51,65,85,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#94a3b8;flex-shrink:0}
-.upload-btn svg{stroke:currentColor;fill:none;width:18px;height:18px}
-.upload-btn:hover{border-color:#6366f1;background:rgba(99,102,241,.2);color:#e2e8f0}
+/* Header buttons */
+.header-actions{display:flex;gap:8px;align-items:center;flex-shrink:0}
+.upload-btn,.gdrive-btn{width:38px;height:38px;border-radius:10px;border:1px solid #475569;background:rgba(51,65,85,.5);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;color:#94a3b8;flex-shrink:0}
+.upload-btn svg,.gdrive-btn svg{stroke:currentColor;fill:none;width:18px;height:18px}
+.upload-btn:hover,.gdrive-btn:hover{border-color:#6366f1;background:rgba(99,102,241,.2);color:#e2e8f0}
 .upload-btn.loaded{border-color:#10b981;background:rgba(16,185,129,.2);color:#10b981}
+.gdrive-btn.loaded{border-color:#10b981;background:rgba(16,185,129,.2);color:#10b981}
+.gdrive-btn{color:#94a3b8}
+.gdrive-btn svg{fill:currentColor;stroke:none;width:20px;height:20px}
 .file-input{display:none}
 /* Patrimony */
 /* Patrimony section */
@@ -256,11 +264,16 @@ body{padding:12px;padding-top:calc(12px + env(safe-area-inset-top));padding-bott
   <div class="header">
     <div class="header-left">
       <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analisi Spese e Patrimonio</h1>
-      <p class="subtitle" id="subtitle">Carica il file <em>.csv</em> estratto da Cashew</p>
+      <p class="subtitle" id="subtitle">Carica un file <em>.csv</em> o accedi a Google Drive</p>
     </div>
-    <div class="upload-btn" id="uploadBtn">
-      <svg id="uploadIcon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-      <input type="file" class="file-input" id="fileInput" accept=".csv">
+    <div class="header-actions">
+      <div class="gdrive-btn" id="gdriveBtn" title="Apri da Google Drive">
+        <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.71 3.5L1.15 15l3.43 5.95 6.56-11.5L7.71 3.5zm1.14 0l6.56 11.5H22l-6.56-11.5H8.85zM15.84 16H2.72L6.15 22h13.13l3.42-5.95-.43-.05H15.84z"/></svg>
+      </div>
+      <div class="upload-btn" id="uploadBtn" title="Carica CSV locale">
+        <svg id="uploadIcon" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        <input type="file" class="file-input" id="fileInput" accept=".csv">
+      </div>
     </div>
   </div>
 
@@ -410,6 +423,140 @@ body{padding:12px;padding-top:calc(12px + env(safe-area-inset-top));padding-bott
   </div>
 </div>
 <script>
+/* ═══════════════════════════════════════════
+   GOOGLE DRIVE CONFIGURATION
+   Replace these with your own credentials from
+   Google Cloud Console.
+   ═══════════════════════════════════════════ */
+const GOOGLE_CLIENT_ID = '995511225815-m7u2d3dq5mlihlj2aq2lmtb3do1mq4ra.apps.googleusercontent.com';
+const GOOGLE_API_KEY   = 'AIzaSyAuXaJxlvRAMkqKY3rZVskhe0KWM_BHrOQ';
+const GOOGLE_APP_ID    = '995511225815'; // Project number from Google Cloud Console (optional, for Picker)
+
+/* Google Drive state */
+let gAccessToken = null;
+let gPickerInited = false;
+let gGisInited = false;
+let gTokenClient = null;
+
+/* Initialize Google Identity Services */
+function initGis() {
+  gTokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: GOOGLE_CLIENT_ID,
+    scope: 'https://www.googleapis.com/auth/drive.readonly',
+    callback: (response) => {
+      if (response.error) { console.error('GIS error', response); return; }
+      gAccessToken = response.access_token;
+      showGooglePicker();
+    },
+  });
+  gGisInited = true;
+  maybeEnableGDrive();
+}
+
+/* Load Picker API via gapi */
+function loadPickerApi() {
+  gapi.load('picker', () => { gPickerInited = true; maybeEnableGDrive(); });
+}
+
+function maybeEnableGDrive() {
+  if (gPickerInited && gGisInited) {
+    document.getElementById('gdriveBtn').style.opacity = '1';
+    document.getElementById('gdriveBtn').style.pointerEvents = 'auto';
+  }
+}
+
+/* On gapi loaded */
+function onGapiLoaded() { loadPickerApi(); }
+
+/* Show the Google Picker dialog */
+function showGooglePicker() {
+  const view = new google.picker.DocsView(google.picker.ViewId.DOCS)
+    .setMimeTypes('text/csv,application/vnd.ms-excel');
+  
+  const pickerBuilder = new google.picker.PickerBuilder()
+    .addView(view)
+    .setOAuthToken(gAccessToken)
+    .setDeveloperKey(GOOGLE_API_KEY)
+    .setCallback(pickerCallback)
+    .setTitle('Seleziona il file CSV da Google Drive')
+    .setLocale('it');
+  
+  if (GOOGLE_APP_ID) pickerBuilder.setAppId(GOOGLE_APP_ID);
+  
+  pickerBuilder.build().setVisible(true);
+}
+
+/* Handle Picker selection */
+function pickerCallback(data) {
+  if (data.action === google.picker.Action.PICKED) {
+    const fileId = data.docs[0].id;
+    const fileName = data.docs[0].name;
+    downloadAndProcessGDriveFile(fileId, fileName);
+  }
+}
+
+/* Download file from Drive and process it */
+async function downloadAndProcessGDriveFile(fileId, fileName) {
+  try {
+    const resp = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      { headers: { 'Authorization': `Bearer ${gAccessToken}` } }
+    );
+    if (!resp.ok) throw new Error('Download failed: ' + resp.status);
+    const csvText = await resp.text();
+    
+    /* Update UI */
+    const gBtn = document.getElementById('gdriveBtn');
+    gBtn.classList.add('loaded');
+    uploadBtn.classList.remove('loaded');
+    uploadIcon.innerHTML = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>';
+    
+    /* Parse with PapaParse */
+    Papa.parse(csvText, {
+      header: true,
+      skipEmptyLines: true,
+      complete: r => handleParsed(r.data, 'gdrive')
+    });
+  } catch (err) {
+    console.error('Google Drive download error:', err);
+    alert('Errore nel download del file da Google Drive. Riprova.');
+  }
+}
+
+/* Google Drive button click handler */
+document.getElementById('gdriveBtn').addEventListener('click', () => {
+  if (!gGisInited || !gPickerInited) {
+    alert('Le API Google si stanno ancora caricando. Riprova tra un momento.');
+    return;
+  }
+  if (!gAccessToken) {
+    gTokenClient.requestAccessToken({ prompt: 'consent' });
+  } else {
+    showGooglePicker();
+  }
+});
+
+/* Initialize on load */
+window.addEventListener('load', () => {
+  /* gapi */
+  if (typeof gapi !== 'undefined') onGapiLoaded();
+  else {
+    const check = setInterval(() => {
+      if (typeof gapi !== 'undefined') { clearInterval(check); onGapiLoaded(); }
+    }, 200);
+  }
+  /* GIS */
+  if (typeof google !== 'undefined' && google.accounts) initGis();
+  else {
+    const check2 = setInterval(() => {
+      if (typeof google !== 'undefined' && google.accounts) { clearInterval(check2); initGis(); }
+    }, 200);
+  }
+});
+
+/* ═══════════════════════════════════════════
+   ORIGINAL APP CODE
+   ═══════════════════════════════════════════ */
 const COLORS=['#6366f1','#8b5cf6','#ec4899','#f59e0b','#10b981','#06b6d4','#ef4444','#a855f7','#f97316','#14b8a6','#84cc16','#f43f5e','#0ea5e9','#d946ef','#eab308'];
 const MN=['Gennaio','Febbraio','Marzo','Aprile','Maggio','Giugno','Luglio','Agosto','Settembre','Ottobre','Novembre','Dicembre'];
 let chartInst=null,barListeners={mousemove:null,mouseleave:null,click:null};
@@ -610,11 +757,37 @@ function getLegPos(){return window.innerWidth<=768?'bottom':'left';}
 
 /* ── Process file ── */
 function processFile(file){
-  uploadBtn.classList.add('loaded');
-  uploadIcon.innerHTML='<polyline points="20 6 9 17 4 12"></polyline>';
-  subtitle.classList.add('loaded');
-  subtitle.innerHTML=`File <em>.csv</em> caricato <button class="info-btn">i<span class="info-tooltip">${esc(file.name)}</span></button>`;
-  Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>analyzeData(r.data)});
+  Papa.parse(file,{header:true,skipEmptyLines:true,complete:r=>handleParsed(r.data,'local')});
+}
+
+/* ── Validate & route parsed CSV ── */
+function handleParsed(rows, source) {
+  const requiredCols = ['date', 'amount', 'account', 'category name'];
+  const headers = rows.length > 0 ? Object.keys(rows[0]) : [];
+  const valid = requiredCols.every(col => headers.includes(col));
+  
+  if (!valid || rows.length === 0) {
+    subtitle.classList.remove('loaded');
+    subtitle.classList.add('error');
+    subtitle.textContent = 'File selezionato non corretto!';
+    results.classList.add('hidden');
+    /* Reset button states */
+    uploadBtn.classList.remove('loaded');
+    uploadIcon.innerHTML = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>';
+    document.getElementById('gdriveBtn').classList.remove('loaded');
+    return;
+  }
+  
+  /* Valid: hide subtitle, mark source button */
+  subtitle.classList.remove('error');
+  subtitle.classList.remove('loaded');
+  subtitle.textContent = '';
+  if (source === 'local') {
+    uploadBtn.classList.add('loaded');
+    document.getElementById('gdriveBtn').classList.remove('loaded');
+    uploadIcon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+  }
+  analyzeData(rows);
 }
 
 /* ── Analyze ── */
