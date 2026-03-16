@@ -27,6 +27,15 @@ button,input,select,textarea{font-family:inherit}
 .error-banner svg{flex-shrink:0;width:16px;height:16px;stroke:#f87171;fill:none}
 .error-banner-close{margin-left:auto;width:22px;height:22px;border-radius:5px;border:none;background:transparent;color:#f87171;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;opacity:.7;transition:opacity .15s}
 .error-banner-close:hover{opacity:1}
+.sync-banner{display:none;align-items:center;gap:10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 16px;margin-bottom:20px;color:#fcd34d;font-size:12px;font-weight:500;animation:bannerIn .2s ease}
+.sync-banner.visible{display:flex}
+.sync-banner svg{flex-shrink:0;width:15px;height:15px;stroke:#fbbf24;fill:none}
+.sync-banner-close{margin-left:auto;width:22px;height:22px;border-radius:5px;border:none;background:transparent;color:#fbbf24;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;opacity:.7;transition:opacity .15s;flex-shrink:0}
+.sync-banner-close:hover{opacity:1}
+.sync-chip{display:none;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;border:1px solid rgba(245,158,11,.4);background:rgba(245,158,11,.1);color:#fbbf24;font-size:11px;font-weight:500;cursor:pointer;transition:all .2s;white-space:nowrap;flex-shrink:0}
+.sync-chip:hover{background:rgba(245,158,11,.2);border-color:rgba(245,158,11,.7)}
+.sync-chip.visible{display:flex}
+.sync-chip svg{width:11px;height:11px;stroke:#fbbf24;fill:none;flex-shrink:0}
 .info-btn{width:18px;height:18px;border-radius:50%;border:1px solid #64748b;background:transparent;color:#64748b;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;transition:all .2s;position:relative}
 .info-btn:hover,.info-btn.active{border-color:#6366f1;color:#6366f1;background:rgba(99,102,241,.1)}
 .info-tooltip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);background:#1e293b;border:1px solid #475569;border-radius:8px;padding:8px 12px;font-size:12px;color:#e2e8f0;white-space:nowrap;opacity:0;visibility:hidden;transition:all .2s;z-index:200;box-shadow:0 4px 12px rgba(0,0,0,.3);pointer-events:none}
@@ -255,6 +264,9 @@ body{padding:12px;padding-top:calc(12px + env(safe-area-inset-top));padding-bott
       <h1><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analisi Spese e Patrimonio</h1>
     </div>
     <div class="header-actions">
+      <div class="sync-chip" id="syncChip" title="Mostra avviso sincronizzazione">
+        <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
       <div class="gdrive-btn" id="gdriveBtn" title="Carica da Google Drive">
         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7.71 3.5L1.15 15l3.43 5.95 6.56-11.5L7.71 3.5zm1.14 0l6.56 11.5H22l-6.56-11.5H8.85zM15.84 16H2.72L6.15 22h13.13l3.42-5.95-.43-.05H15.84z"/></svg>
       </div>
@@ -268,6 +280,11 @@ body{padding:12px;padding-top:calc(12px + env(safe-area-inset-top));padding-bott
     <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
     <span id="errorBannerText">File selezionato non corretto!</span>
     <button class="error-banner-close" id="errorBannerClose" title="Chiudi">&#x2715;</button>
+  </div>
+  <div class="sync-banner" id="syncBanner">
+    <svg viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    <span id="syncBannerText">I dati potrebbero non essere sincronizzati con l'applicazione. In questo caso chiudere e riaprire l'app, attendere qualche minuto e rifare l'accesso su questo sito.</span>
+    <button class="sync-banner-close" id="syncBannerClose" title="Chiudi">&#x2715;</button>
   </div>
   <div id="results" class="hidden">
     <div class="patrimony-section" id="patrimonySection">
@@ -399,7 +416,7 @@ body{padding:12px;padding-top:calc(12px + env(safe-area-inset-top));padding-bott
 </div>
 <script>
 /* ═══════════════════════════════════════════
-   GOOGLE DRIVE – AUTO-LOAD cashew/main.csv
+   GOOGLE DRIVE – AUTO-LOAD cashew/main/main.csv
    ═══════════════════════════════════════════ */
 const GOOGLE_CLIENT_ID = '995511225815-m7u2d3dq5mlihlj2aq2lmtb3do1mq4ra.apps.googleusercontent.com';
 
@@ -422,24 +439,35 @@ async function autoLoadMainCsv() {
   const gBtn = document.getElementById('gdriveBtn');
   gBtn.classList.add('loading');
   try {
-    // 1. Trova cartella "cashew"
+    // 1. Trova cartella "Cashew"
     const foldResp = await fetch(
       'https://www.googleapis.com/drive/v3/files?q=' +
       encodeURIComponent("name='Cashew' and mimeType='application/vnd.google-apps.folder' and trashed=false") +
       '&fields=files(id)', { headers: { Authorization: 'Bearer ' + gAccessToken } });
     const foldData = await foldResp.json();
     if (!foldData.files || !foldData.files.length) throw new Error('Cartella "Cashew" non trovata su Drive');
-    const folderId = foldData.files[0].id;
+    const cashewId = foldData.files[0].id;
 
-    // 2. Trova "main.csv" nella cartella
+    // 2. Trova sottocartella "main" dentro Cashew
+    const subResp = await fetch(
+      'https://www.googleapis.com/drive/v3/files?q=' +
+      encodeURIComponent("name='main' and mimeType='application/vnd.google-apps.folder' and '" + cashewId + "' in parents and trashed=false") +
+      '&fields=files(id)', { headers: { Authorization: 'Bearer ' + gAccessToken } });
+    const subData = await subResp.json();
+    if (!subData.files || !subData.files.length) throw new Error('Sottocartella "main" non trovata dentro Cashew');
+    const mainFolderId = subData.files[0].id;
+
+    // 3. Trova "main.csv" nella sottocartella main
     const fileResp = await fetch(
       'https://www.googleapis.com/drive/v3/files?q=' +
-      encodeURIComponent("name='main.csv' and '" + folderId + "' in parents and trashed=false") +
-      '&fields=files(id)', { headers: { Authorization: 'Bearer ' + gAccessToken } });
+      encodeURIComponent("name='main.csv' and '" + mainFolderId + "' in parents and trashed=false") +
+      '&fields=files(id,modifiedTime)', { headers: { Authorization: 'Bearer ' + gAccessToken } });
     const fileData = await fileResp.json();
-    if (!fileData.files || !fileData.files.length) throw new Error('File "main.csv" non trovato nella cartella Cashew');
+    if (!fileData.files || !fileData.files.length) throw new Error('File "main.csv" non trovato nella cartella main');
 
-    // 3. Scarica contenuto
+    const modifiedTime = fileData.files[0].modifiedTime;
+
+    // 4. Scarica contenuto
     const dlResp = await fetch(
       'https://www.googleapis.com/drive/v3/files/' + fileData.files[0].id + '?alt=media',
       { headers: { Authorization: 'Bearer ' + gAccessToken } });
@@ -451,7 +479,24 @@ async function autoLoadMainCsv() {
     uploadBtn.classList.remove('loaded');
     uploadIcon.innerHTML = '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>';
 
+    // 5. Componi testo banner con data ultimo aggiornamento
+    const lastSync = modifiedTime
+      ? new Date(modifiedTime).toLocaleString('it-IT', {
+          day: '2-digit', month: '2-digit', year: 'numeric',
+          hour: '2-digit', minute: '2-digit'
+        })
+      : null;
+    const bannerMsg = (lastSync ? 'Ultimo aggiornamento: ' + lastSync + ' — ' : '') +
+      'I dati potrebbero non essere sincronizzati con l\'applicazione. ' +
+      'In questo caso chiudere e riaprire l\'app, attendere qualche minuto e rifare l\'accesso su questo sito.';
+    document.getElementById('syncBannerText').textContent = bannerMsg;
+
+    // 6. Mostra banner, nascondi chip
+    document.getElementById('syncBanner').classList.add('visible');
+    document.getElementById('syncChip').classList.remove('visible');
+
     Papa.parse(csvText, { header: true, skipEmptyLines: true, complete: r => handleParsed(r.data, 'gdrive') });
+
   } catch (err) {
     console.error('Google Drive error:', err);
     gBtn.classList.remove('loading');
@@ -478,11 +523,21 @@ window.addEventListener('load', () => {
 });
 
 /* ═══════════════════════════════════════════
-   ERROR BANNER
+   ERROR BANNER + SYNC BANNER/CHIP
    ═══════════════════════════════════════════ */
 const errorBanner = document.getElementById('errorBanner');
 const errorBannerText = document.getElementById('errorBannerText');
 document.getElementById('errorBannerClose').addEventListener('click', hideError);
+
+document.getElementById('syncBannerClose').addEventListener('click', () => {
+  document.getElementById('syncBanner').classList.remove('visible');
+  document.getElementById('syncChip').classList.add('visible');
+});
+
+document.getElementById('syncChip').addEventListener('click', () => {
+  document.getElementById('syncBanner').classList.add('visible');
+  document.getElementById('syncChip').classList.remove('visible');
+});
 
 function showError(msg) {
   errorBannerText.textContent = msg || 'File selezionato non corretto!';
@@ -707,6 +762,9 @@ function handleParsed(rows, source) {
     uploadBtn.classList.add('loaded');
     document.getElementById('gdriveBtn').classList.remove('loaded');
     uploadIcon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
+    // Nascondi banner e chip sync se si carica un file locale
+    document.getElementById('syncBanner').classList.remove('visible');
+    document.getElementById('syncChip').classList.remove('visible');
   }
   analyzeData(rows);
 }
