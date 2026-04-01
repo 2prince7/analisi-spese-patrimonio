@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="theme-color" content="#1e293b">
+    <meta name="color-scheme" content="dark">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="apple-touch-icon" href="icon/icon_iphone.png">
@@ -668,7 +669,7 @@ to  {
   border-radius:12px;
   padding:14px;
   z-index:9999;
-  width:280px;
+  width:310px;
   box-shadow:0 12px 32px rgba(0,0,0,.6);
   display:none;
   overflow:hidden
@@ -1646,7 +1647,7 @@ to  {
   }
 
 .drp-dropdown  {
-    width:290px
+    width:310px
   }
 
 /* Titoli sezioni */ .card-title  {
@@ -1839,7 +1840,7 @@ to  {
   }
 
 .drp-dropdown  {
-    width:280px;
+    width:310px;
     max-width:320px
   }
 
@@ -2042,8 +2043,8 @@ to  {
     font-size:16px
   }
 
-/* Date picker: dimensionato per stare in 280px */ .drp-day  {
-    min-height:36px;
+/* Date picker: dimensionato per stare in 310px */ .drp-day  {
+    min-height:38px;
     font-size:14px;
     border-radius:6px
   }
@@ -2159,7 +2160,7 @@ to  {
   }
 
 .drp-dropdown  {
-    width:280px
+    width:310px
   }
 
 /* Filtri: ancora confortevoli */ .tab  {
@@ -2629,8 +2630,10 @@ async function syncAndLoad() {
       minute: '2-digit'
     }) : null;
     document.getElementById('syncBannerText').innerHTML = (ls ? '<b>Ultimo aggiornamento: ' + ls + '</b><br>' : '') + 'I dati potrebbero non essere sincronizzati. Per aggiornare chiudi e riapri Cashew, attendi che i dati siano esportati (barra di caricamento in basso) e poi ricarica la pagina.';
-    document.getElementById('syncBanner').classList.add('visible');
-    document.getElementById('syncChip').classList.remove('visible');
+
+    /* MODIFICA 4: Banner giallo inizialmente chiuso, chip visibile */
+    document.getElementById('syncBanner').classList.remove('visible');
+    document.getElementById('syncChip').classList.add('visible');
 
     setStatus('Elaborazione dati\u2026');
     await sleep(100);
@@ -2754,7 +2757,7 @@ class DRP {
     const vw = document.documentElement.clientWidth;
     const vh = window.innerHeight;
     const maxW = vw - 16;
-    const ddW = Math.min(280, maxW);
+    const ddW = Math.min(310, maxW);
     this.dd.style.width = ddW + 'px';
     const ddH = this.dd.offsetHeight || 320;
     let top = tr.bottom + 6;
@@ -2897,6 +2900,14 @@ class DRP {
     this.upd();
     this.onChange(null, null);
     this.close();
+  }
+  /* Metodo per impostare le date programmaticamente */
+  setRange(start, end) {
+    this.sd = start;
+    this.ed = end;
+    this.sel = false;
+    this.hd = null;
+    this.upd();
   }
   upd() {
     const f = d => d.toLocaleDateString('it-IT', {
@@ -3138,6 +3149,7 @@ function analyzeData(rows) {
   rows.forEach(r => {
     if (r.account) acctBal[r.account] = (acctBal[r.account] || 0) + (parseFloat(r.amount) || 0);
   });
+  Object.keys(acctBal).forEach(k => { const v = Math.round(acctBal[k] * 100) / 100; acctBal[k] = v === 0 ? 0 : v; });
   const tot = Object.values(acctBal).reduce((s, v) => s + v, 0);
   document.getElementById('totalPatrimony').textContent = '\u20AC ' + f2(tot);
   allTx = rows.filter(r => r['category name'] && r['category name'] !== 'Correzione saldo').map(r => ({
@@ -3183,6 +3195,16 @@ function analyzeData(rows) {
         if (histPanel.classList.contains('open')) updHist();
       }
     });
+
+    /* MODIFICA 1: Prepopola filtro spese dal 1° del mese corrente a oggi */
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    mainDRP.setRange(monthStart, today);
+
+    /* MODIFICA 2: Prepopola filtro storico patrimonio dal 1° gennaio anno corrente */
+    const yearStart = new Date(now.getFullYear(), 0, 1);
+    histDRP.setRange(yearStart, today);
   }
   updCTVis();
   updBadge();
@@ -3215,10 +3237,10 @@ function getFiltTx() {
 }
 
 function renderAcctChart() {
-  let data = Object.entries(acctBal).map(([n, v]) => ({
-    name: n,
-    value: Math.round(v * 100) / 100
-  })).sort((a, b) => b.value - a.value);
+  let data = Object.entries(acctBal).map(([n, v]) => {
+    const rv = Math.round(v * 100) / 100;
+    return { name: n, value: rv === 0 ? 0 : rv };
+  }).sort((a, b) => b.value - a.value);
   const total = data.reduce((s, d) => s + d.value, 0);
   const el = document.getElementById('accountsTableContainer');
   let sc = 'value',
